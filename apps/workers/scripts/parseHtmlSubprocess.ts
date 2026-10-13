@@ -14,7 +14,6 @@ import metascraperImage from "metascraper-image";
 import metascraperPublisher from "metascraper-publisher";
 import metascraperTitle from "metascraper-title";
 import metascraperUrl from "metascraper-url";
-import metascraperX from "metascraper-x";
 import metascraperYoutube from "metascraper-youtube";
 import { getRandomProxy } from "network";
 import winston from "winston";
@@ -25,6 +24,7 @@ import logger from "@karakeep/shared/logger";
 import metascraperAmazonImproved from "../metascraper-plugins/metascraper-amazon-improved";
 import metascraperReddit from "../metascraper-plugins/metascraper-reddit";
 import metascraperSafeFavicon from "../metascraper-plugins/metascraper-safe-favicon";
+import metascraperX from "../metascraper-plugins/metascraper-x";
 import {
   parseSubprocessErrorSchema,
   parseSubprocessInputSchema,
@@ -63,8 +63,8 @@ const metascraperParser = metascraper([
   metascraperAuthor(),
   metascraperPublisher(),
   metascraperTitle(),
-  metascraperDescription(),
   metascraperX(),
+  metascraperDescription(),
   metascraperImage(),
   metascraperSafeFavicon(),
   metascraperUrl(),
