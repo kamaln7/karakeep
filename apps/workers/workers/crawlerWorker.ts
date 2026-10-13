@@ -40,6 +40,7 @@ import {
   BrowserContextOptions,
   Page,
 } from "patchright";
+import sharp from "sharp";
 import {
   abortRace,
   abortRaceResolve,
@@ -132,6 +133,8 @@ import { runParseSubprocess } from "./utils/parseSubprocess";
 import { installRedirectGuard } from "./utils/redirectGuard";
 
 const tracer = getTracer("@karakeep/workers");
+// Render pages at 2x so screenshots are crisp on Retina displays.
+const DEVICE_SCALE_FACTOR = 2;
 
 // Runs fn in a "crawlerWorker.<name>" span, a child of the current span.
 // Job-level attributes (job, bookmark, user) live on the root
@@ -1253,6 +1256,7 @@ export const crawlPage = traced(
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
       userAgent,
+      deviceScaleFactor: DEVICE_SCALE_FACTOR,
       // A UTC browser behind a proxy that geolocates elsewhere is a
       // strong bot signal; this should match the proxy's location.
       timezoneId: serverConfig.crawler.browserTimezone,
@@ -1423,6 +1427,7 @@ async function renderPrecrawledArchiveScreenshot(
   try {
     context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: DEVICE_SCALE_FACTOR,
       javaScriptEnabled: false,
       serviceWorkers: "block",
       offline: true,
@@ -1609,12 +1614,20 @@ function captureAsset(
 
 function captureScreenshot(ctx: CrawlContext, page: Page) {
   return captureAsset(ctx, "screenshot", () =>
-    page.screenshot({
-      // If you change this, change the content type in CAPTURED_ASSETS too.
-      type: "jpeg",
-      fullPage: serverConfig.crawler.fullPageScreenshot,
-      quality: 80,
-    }),
+    page
+      .screenshot({
+        // Encode the stored JPEG once, with density metadata. If you change
+        // the output format, change the content type in CAPTURED_ASSETS too.
+        type: "png",
+        scale: "device",
+        fullPage: serverConfig.crawler.fullPageScreenshot,
+      })
+      .then((png) =>
+        sharp(png)
+          .withMetadata({ density: 96 * DEVICE_SCALE_FACTOR })
+          .jpeg({ quality: 80 })
+          .toBuffer(),
+      ),
   );
 }
 

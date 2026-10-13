@@ -17,6 +17,16 @@ const html = readFileSync(
   "utf8",
 );
 const url = "https://x.com/janedoe/status/1234567890123456789";
+const currentArticleHtml = `<html><body><article class="flex flex-col gap-1">
+  <img src="https://pbs.twimg.com/profile_images/avatar.jpg" alt="@janedoe">
+  <img src="https://pbs.twimg.com/media/cover.jpg" alt="Cover">
+  <h1 dir="auto">Lorem Ipsum Dolor Sit Amet</h1>
+  <div class="x-article-body break-words"><div class="contents">
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+    <p>More article content with <a href="https://example.com">a link</a>.</p>
+  </div></div>
+  <div dir="auto" class="font-chirp whitespace-pre-wrap">Unrelated reply</div>
+</article></body></html>`;
 const postHtml = `<html><head><meta property="og:title" content="Original post title"></head><body>
   <div data-testid="cellInnerDiv"><article data-testid="tweet">
     <div data-testid="User-Name"><a href="/janedoe">Jane Doe</a><a href="/janedoe">@janedoe</a></div>
@@ -29,6 +39,13 @@ Second paragraph with </span><a href="https://example.com/components">a componen
     <div data-testid="tweetText">An unrelated reply that is not part of the saved post.</div>
   </article></div>
 </body></html>`;
+const currentPostHtml = postHtml
+  .replaceAll('data-testid="cellInnerDiv"', 'class="px-horizontal py-vertical"')
+  .replaceAll('data-testid="tweet"', 'class="flex flex-col gap-1"')
+  .replaceAll(
+    'data-testid="tweetText"',
+    'dir="auto" class="font-chirp whitespace-pre-wrap"',
+  );
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -69,27 +86,44 @@ test("uses the first eight content words only when an article has no title", () 
   expect(extractXContent(html, url)?.title).toBe("Lorem Ipsum Dolor Sit Amet");
 });
 
-test("extracts X post paragraphs and links without replies or network requests", () => {
-  const fetch = vi.spyOn(globalThis, "fetch");
-  const result = extractXContent(postHtml, url);
-  expect(result?.extractorType).toBe("twitter");
-  const dom = new JSDOM(result?.content);
-  try {
-    const paragraphs = [...dom.window.document.querySelectorAll("p")];
-    expect(paragraphs.map((p) => p.textContent)).toEqual([
-      "First paragraph with useful context.",
-      "Second paragraph with a component library and <literal markup>.",
-    ]);
-    expect(paragraphs[1].querySelector("a")?.href).toBe(
-      "https://example.com/components",
-    );
-    expect(dom.window.document.querySelector("literal")).toBeNull();
-    expect(result?.content).not.toContain("unrelated reply");
-    expect(fetch).not.toHaveBeenCalled();
-  } finally {
-    dom.window.close();
-  }
+test("extracts current X article markup before considering tweet content", () => {
+  const result = extractXContent(currentArticleHtml, url);
+  expect(result?.extractorType).toBe("xarticle");
+  expect(result?.title).toBe("Lorem Ipsum Dolor Sit Amet");
+  expect(result?.content).toContain("More article content");
+  expect(result?.content).toContain("https://pbs.twimg.com/media/cover.jpg");
+  expect(result?.content).not.toContain("profile_images");
+  expect(result?.content).not.toContain("Unrelated reply");
+  expect(
+    extractXContent(currentArticleHtml.replace(/<h1[^>]*>.*?<\/h1>/, ""), url)
+      ?.title,
+  ).toBe("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
 });
+
+test.each([postHtml, currentPostHtml])(
+  "extracts X post paragraphs and links without replies or network requests (case %#)",
+  (source) => {
+    const fetch = vi.spyOn(globalThis, "fetch");
+    const result = extractXContent(source, url);
+    expect(result?.extractorType).toBe("twitter");
+    const dom = new JSDOM(result?.content);
+    try {
+      const paragraphs = [...dom.window.document.querySelectorAll("p")];
+      expect(paragraphs.map((p) => p.textContent)).toEqual([
+        "First paragraph with useful context.",
+        "Second paragraph with a component library and <literal markup>.",
+      ]);
+      expect(paragraphs[1].querySelector("a")?.href).toBe(
+        "https://example.com/components",
+      );
+      expect(dom.window.document.querySelector("literal")).toBeNull();
+      expect(result?.content).not.toContain("unrelated reply");
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      dom.window.close();
+    }
+  },
+);
 
 test("titles posts with a word-boundary excerpt of their text", () => {
   expect(extractXContent(postHtml, url)?.title).toBe(
