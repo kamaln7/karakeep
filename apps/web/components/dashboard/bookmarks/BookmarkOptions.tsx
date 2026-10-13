@@ -92,11 +92,14 @@ function isSubsectionItem(item: ActionItemType): item is SubsectionItem {
 export default function BookmarkOptions({
   bookmark,
   hiddenActions,
+  inlineSubmenus,
   trigger,
 }: {
   bookmark: ZBookmark;
   // Ids of top-level actions to leave out of the menu
   hiddenActions?: string[];
+  // Ids of submenus whose items are shown directly in the menu instead
+  inlineSubmenus?: string[];
   trigger?: React.ReactNode;
 }) {
   const { t } = useTranslation();
@@ -509,15 +512,24 @@ export default function BookmarkOptions({
 
   const visibleGroups = actionGroups
     .map((group) =>
-      group.filter((item) => {
-        if (hiddenActions?.includes(item.id)) {
-          return false;
-        }
-        if (isSubsectionItem(item)) {
-          return item.visible && item.items.some((subItem) => subItem.visible);
-        }
-        return item.visible;
-      }),
+      group
+        .filter((item) => !hiddenActions?.includes(item.id))
+        // Replace the listed submenus with their items, hoisted into the menu
+        .flatMap((item) =>
+          isSubsectionItem(item) && inlineSubmenus?.includes(item.id)
+            ? item.visible
+              ? item.items
+              : []
+            : [item],
+        )
+        .filter((item) => {
+          if (isSubsectionItem(item)) {
+            return (
+              item.visible && item.items.some((subItem) => subItem.visible)
+            );
+          }
+          return item.visible;
+        }),
     )
     .filter((group) => group.length > 0);
 
