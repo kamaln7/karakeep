@@ -19,6 +19,7 @@ import useUpload from "@/lib/hooks/upload-file";
 import { useTranslation } from "@/lib/i18n/client";
 import {
   HardDriveDownload,
+  Camera,
   Circle,
   Download,
   FileDown,
@@ -217,6 +218,13 @@ export default function BookmarkOptions({
     onError,
   });
 
+  const retakeScreenshotMutator = useRecrawlBookmark({
+    onSuccess: () => {
+      toast.success(t("toasts.bookmarks.retake_screenshot"));
+    },
+    onError,
+  });
+
   const preserveVideoMutator = usePreserveBookmarkVideo({
     onSuccess: () => {
       toast.success(t("toasts.bookmarks.preserve_video"));
@@ -407,6 +415,19 @@ export default function BookmarkOptions({
               preservePdfMutator.mutate({
                 bookmarkId: bookmark.id,
                 storePdf: true,
+              });
+            },
+          },
+          {
+            id: "retake-screenshot",
+            title: t("actions.retake_screenshot"),
+            icon: <Camera className="size-4" />,
+            visible: true,
+            disabled: demoMode,
+            onClick: () => {
+              retakeScreenshotMutator.mutate({
+                bookmarkId: bookmark.id,
+                screenshotOnly: true,
               });
             },
           },
