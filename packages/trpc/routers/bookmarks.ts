@@ -830,6 +830,7 @@ export const bookmarksAppRouter = router({
         bookmarkId: z.string(),
         archiveFullPage: z.boolean().optional().default(false),
         storePdf: z.boolean().optional().default(false),
+        screenshotOnly: z.boolean().optional().default(false),
       }),
     )
     .use(ensureBookmarkOwnership)
@@ -838,6 +839,7 @@ export const bookmarksAppRouter = router({
         bookmarkId: input.bookmarkId,
         archiveFullPage: input.archiveFullPage,
         storePdf: input.storePdf,
+        screenshotOnly: input.screenshotOnly,
       };
       await LowPriorityCrawlerQueue.enqueue(payload, {
         groupId: ctx.user.id,

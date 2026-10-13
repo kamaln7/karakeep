@@ -1,5 +1,7 @@
 // The crawler worker. Read top-down: the queue wiring and runCrawler (the
 // whole job) come first, then the steps in the order they run:
+//  0. A screenshot-only job (a user-triggered retake) skips everything below
+//     and only recaptures the screenshot, using the browser fetch from 2b.
 //  1. Before crawling: domain rate limit, and a probe that decides between an
 //     asset bookmark (pdf/image) and a webpage, extracting early metadata.
 //  2a. The URL is a file: download it and turn the bookmark into an asset.
@@ -256,7 +258,8 @@ export class CrawlerWorker {
           const jobId = job.id;
           logger.info(`[Crawler][${jobId}] Completed successfully`);
           const bookmarkId = job.data.bookmarkId;
-          if (bookmarkId) {
+          // A screenshot retake leaves the crawl's status alone.
+          if (bookmarkId && !job.data.screenshotOnly) {
             await db
               .update(bookmarkLinks)
               .set({
@@ -275,7 +278,11 @@ export class CrawlerWorker {
             `[Crawler][${jobId}] Crawling job failed: ${job.error}\n${job.error.stack}`,
           );
           const bookmarkId = job.data?.bookmarkId;
-          if (bookmarkId && job.numRetriesLeft == 0) {
+          if (
+            bookmarkId &&
+            job.numRetriesLeft == 0 &&
+            !job.data?.screenshotOnly
+          ) {
             await db.transaction((tx) => {
               tx.update(bookmarkLinks)
                 .set({
@@ -345,7 +352,8 @@ async function runCrawler(
     return { status: "completed" };
   }
 
-  const { bookmarkId, archiveFullPage, storePdf } = request.data;
+  const { bookmarkId, archiveFullPage, storePdf, screenshotOnly } =
+    request.data;
   // Add the bookmark id before any database or network work so failed and
   // aborted crawler events remain discoverable by bookmark id.
   addLogFields<"crawlerWorker.run">({
@@ -405,6 +413,20 @@ async function runCrawler(
       runProxy.httpsProxy ?? runProxy.httpProxy ?? "",
     ),
   });
+
+  if (screenshotOnly) {
+    // A retake is user-triggered, so it gets one attempt: a failure is logged
+    // and the job completes instead of being retried by the queue.
+    const { error } = await tryCatch(
+      retakeScreenshot(ctx, oldScreenshotAssetId),
+    );
+    if (error) {
+      log.warn(
+        `Retaking the screenshot failed, keeping the existing one: ${error}`,
+      );
+    }
+    return { status: "completed" };
+  }
 
   log.info(`Will crawl "${truncateUrl(url)}" for link with id "${bookmarkId}"`);
   await checkDomainRateLimit(ctx);
@@ -498,6 +520,57 @@ async function runCrawler(
 
   return { status: "completed" };
 }
+
+// ---------------------------------------------------------------------------
+// 0. A screenshot-only job
+// ---------------------------------------------------------------------------
+
+/**
+ * Retakes a link bookmark's screenshot without re-parsing the page, so its
+ * content, other assets, crawl status and tags stay as they are. A capture
+ * that produces no screenshot throws; the caller decides what a failure means.
+ */
+const retakeScreenshot = traced(
+  "retakeScreenshot",
+  async (
+    ctx: CrawlContext,
+    oldScreenshotAssetId: string | undefined,
+  ): Promise<void> => {
+    const { jobId, bookmarkId, userId, abortSignal, log } = ctx;
+    const { screenshot } = await crawlPage(ctx, false);
+    abortSignal.throwIfAborted();
+    if (!screenshot) {
+      throw new Error(
+        `[Crawler][${jobId}] The capture produced no screenshot; see the capture warning above`,
+      );
+    }
+
+    // Null when the storage quota is exhausted.
+    const stored = await storeCapturedAsset(ctx, "screenshot", screenshot);
+    if (!stored) {
+      return;
+    }
+    await db.transaction((txn) => {
+      updateAsset(
+        oldScreenshotAssetId,
+        {
+          id: stored.assetId,
+          bookmarkId,
+          userId,
+          assetType: AssetTypes.LINK_SCREENSHOT,
+          contentType: stored.contentType,
+          size: stored.size,
+          fileName: stored.fileName,
+        },
+        txn,
+      );
+    });
+    if (oldScreenshotAssetId) {
+      await silentDeleteAsset(userId, oldScreenshotAssetId);
+    }
+    log.info(`Retook the screenshot for "${bookmarkId}"`);
+  },
+);
 
 // ---------------------------------------------------------------------------
 // 1. Before crawling
