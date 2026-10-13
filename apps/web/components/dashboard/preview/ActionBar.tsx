@@ -158,6 +158,8 @@ export default function ActionBar({ bookmark }: { bookmark: ZBookmark }) {
         bookmark={bookmark}
         // Already available as buttons in this bar (or irrelevant outside the grid)
         hiddenActions={["select", "edit", "favorite", "archive", "delete"]}
+        // The menu is already the "more" of this bar, so skip that submenu
+        inlineSubmenus={["more"]}
         trigger={
           <ButtonWithTooltip
             tooltip={t("actions.more")}
