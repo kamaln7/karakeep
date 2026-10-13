@@ -109,5 +109,12 @@ export function getBookmarkTitle(bookmark: ZBookmark) {
       break;
   }
 
-  return bookmark.title ? bookmark.title : title;
+  title = bookmark.title || title;
+  return title &&
+    bookmark.content.type === BookmarkTypes.LINK &&
+    /^https?:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\//i.test(
+      bookmark.content.url,
+    )
+    ? title.replace(/^\(\d+\)\s+(?=\S)/, "")
+    : title;
 }

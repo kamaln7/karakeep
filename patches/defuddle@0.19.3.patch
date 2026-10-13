@@ -1,7 +1,16 @@
 diff --git a/dist/extractors/twitter.js b/dist/extractors/twitter.js
-index af31503f18101fa706a87a0c727ff92a8a890f5b..f719ac87f8c4102199c61e69647e138b50c7770f 100644
+index af31503f18101fa706a87a0c727ff92a8a890f5b..5850e63fc08e32d8cf6ed44d52cd8a48e6045ca8 100644
 --- a/dist/extractors/twitter.js
 +++ b/dist/extractors/twitter.js
+@@ -15,7 +15,7 @@ class TwitterExtractor extends _base_1.BaseExtractor {
+         // A markup change must never yield nothing: a bare post beats falling
+         // through to the generic extractor, which produces unusable output.
+         if (!this.mainTweet) {
+-            this.mainTweet = document.querySelector('article[data-testid="tweet"]');
++            this.mainTweet = document.querySelector('article[data-testid="tweet"], article:has(div[dir="auto"].whitespace-pre-wrap)');
+         }
+     }
+     /**
 @@ -169,11 +169,6 @@ class TwitterExtractor extends _base_1.BaseExtractor {
          // Create a temporary div to parse and clean the HTML
          const tempDiv = this.document.createElement('div');
@@ -14,3 +23,43 @@ index af31503f18101fa706a87a0c727ff92a8a890f5b..f719ac87f8c4102199c61e69647e138b
          // Remove unnecessary spans and divs but keep their content
          tempDiv.querySelectorAll('span, div').forEach(element => {
              element.replaceWith(...Array.from(element.childNodes));
+@@ -204,7 +199,7 @@ class TwitterExtractor extends _base_1.BaseExtractor {
+             return '';
+         const tweetClone = tweet.cloneNode(true);
+         this.replaceEmojiImages(tweetClone);
+-        const tweetTextEl = tweetClone.querySelector('[data-testid="tweetText"]');
++        const tweetTextEl = tweetClone.querySelector('[data-testid="tweetText"], div[dir="auto"].whitespace-pre-wrap');
+         const tweetText = tweetTextEl ? (0, dom_1.serializeHTML)(tweetTextEl) : '';
+         const formattedText = this.formatTweetText(tweetText);
+         const quotedTweet = this.findQuotedTweet(tweet);
+@@ -225,7 +220,7 @@ class TwitterExtractor extends _base_1.BaseExtractor {
+     extractQuotedTweet(quotedTweet) {
+         const tweetClone = quotedTweet.cloneNode(true);
+         this.replaceEmojiImages(tweetClone);
+-        const tweetTextEl = tweetClone.querySelector('[data-testid="tweetText"]');
++        const tweetTextEl = tweetClone.querySelector('[data-testid="tweetText"], div[dir="auto"].whitespace-pre-wrap');
+         const tweetText = tweetTextEl ? (0, dom_1.serializeHTML)(tweetTextEl) : '';
+         const formattedText = this.formatTweetText(tweetText);
+         const userInfo = this.extractUserInfo(quotedTweet);
+diff --git a/dist/extractors/x-article.js b/dist/extractors/x-article.js
+index 5b440780c8e1ebd4931cb99424c497237e2b8de5..b8aa128e47b2b9e27b87c6c7e2ee130e42d374d6 100644
+--- a/dist/extractors/x-article.js
++++ b/dist/extractors/x-article.js
+@@ -4,13 +4,13 @@ exports.XArticleExtractor = void 0;
+ const _base_1 = require("./_base");
+ const dom_1 = require("../utils/dom");
+ const SELECTORS = {
+-    ARTICLE_READ_VIEW: '[data-testid="twitterArticleReadView"]',
+-    ARTICLE_CONTAINER: '[data-testid="twitterArticleRichTextView"]',
+-    TITLE: '[data-testid="twitter-article-title"]',
++    ARTICLE_READ_VIEW: '[data-testid="twitterArticleReadView"], article:has(.x-article-body)',
++    ARTICLE_CONTAINER: '[data-testid="twitterArticleRichTextView"], .x-article-body',
++    TITLE: '[data-testid="twitter-article-title"], article h1[dir="auto"]',
+     AUTHOR: '[itemprop="author"]',
+     AUTHOR_NAME: 'meta[itemprop="name"]',
+     AUTHOR_HANDLE: 'meta[itemprop="additionalName"]',
+-    IMAGES: '[data-testid="tweetPhoto"] img',
++    IMAGES: '[data-testid="tweetPhoto"] img, img[src*="pbs.twimg.com/media/"]',
+     DRAFT_PARAGRAPHS: '.longform-unstyled, .public-DraftStyleDefault-block',
+     BOLD_SPANS: 'span[style*="font-weight: bold"]',
+     DRAFT_ATTRIBUTES: '[data-offset-key]',
