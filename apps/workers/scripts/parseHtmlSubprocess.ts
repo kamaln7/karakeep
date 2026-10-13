@@ -35,7 +35,7 @@ import {
   ReaderViewAssessment,
   unavailableReaderViewAssessment,
 } from "../workers/utils/readerViewAssessment";
-import { extractXArticle } from "../workers/utils/xArticle";
+import { extractXContent } from "../workers/utils/xContent";
 
 // Redirect all log output to stderr so it doesn't interfere with the JSON protocol on stdout.
 logger.clear();
@@ -246,13 +246,11 @@ async function main() {
   logger.info(`[Crawler][${jobId}] Done extracting metadata from the page.`);
 
   if (!metadataOnly) {
-    const article = extractXArticle(htmlContent, url);
-    if (article) {
-      // Defuddle falls back to a placeholder when the title node is missing.
-      meta.title =
-        article.title !== "Untitled X Article" ? article.title : meta.title;
-      meta.author = article.author || meta.author;
-      meta.readableContentHtml = article.content;
+    const xContent = extractXContent(htmlContent, url);
+    if (xContent) {
+      meta.title = xContent.title || meta.title;
+      meta.author = xContent.author || meta.author;
+      meta.readableContentHtml = xContent.content;
     }
   }
 

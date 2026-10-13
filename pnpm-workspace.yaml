@@ -36,6 +36,8 @@ patchedDependencies:
   # Detach service worker targets that Chrome reports without a browserContextId
   # instead of failing an assertion that crashes connectOverCDP().
   patchright-core@1.59.4: patches/patchright-core@1.59.4.patch
+  # Keep X post links clickable; Defuddle's tweet formatter otherwise unwraps anchors.
+  defuddle@0.19.3: patches/defuddle@0.19.3.patch
 
 # Docker builds can prune packages that use one of the root patches.
 allowUnusedPatches: true

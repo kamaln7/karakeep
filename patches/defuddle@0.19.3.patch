@@ -1,0 +1,16 @@
+diff --git a/dist/extractors/twitter.js b/dist/extractors/twitter.js
+index af31503f18101fa706a87a0c727ff92a8a890f5b..f719ac87f8c4102199c61e69647e138b50c7770f 100644
+--- a/dist/extractors/twitter.js
++++ b/dist/extractors/twitter.js
+@@ -169,11 +169,6 @@ class TwitterExtractor extends _base_1.BaseExtractor {
+         // Create a temporary div to parse and clean the HTML
+         const tempDiv = this.document.createElement('div');
+         tempDiv.appendChild((0, dom_1.parseHTML)(this.document, text));
+-        // Convert links to plain text with @ handles
+-        tempDiv.querySelectorAll('a').forEach(link => {
+-            const handle = link.textContent?.trim() || '';
+-            link.replaceWith(handle);
+-        });
+         // Remove unnecessary spans and divs but keep their content
+         tempDiv.querySelectorAll('span, div').forEach(element => {
+             element.replaceWith(...Array.from(element.childNodes));
