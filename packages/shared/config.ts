@@ -137,6 +137,19 @@ const allEnv = z.object({
     )
     .optional(),
   CRAWLER_COLOR_SCHEME: z.enum(["light", "dark"]).optional(),
+  CRAWLER_LOCALE: z
+    .string()
+    .refine(
+      (locale) => {
+        try {
+          return Intl.getCanonicalLocales(locale).length === 1;
+        } catch {
+          return false;
+        }
+      },
+      { message: "must be a single BCP 47 locale (e.g. en-US)" },
+    )
+    .optional(),
   CRAWLER_NUM_WORKERS: z.coerce.number().default(1),
   INFERENCE_NUM_WORKERS: z.coerce.number().default(1),
   SEARCH_NUM_WORKERS: z.coerce.number().default(50),
@@ -421,6 +434,7 @@ const serverConfigSchema = allEnv.transform((val, ctx) => {
       challengeWaitSec: val.CRAWLER_CHALLENGE_WAIT_SEC,
       browserTimezone: val.CRAWLER_BROWSER_TIMEZONE,
       colorScheme: val.CRAWLER_COLOR_SCHEME,
+      locale: val.CRAWLER_LOCALE,
       downloadBannerImage: val.CRAWLER_DOWNLOAD_BANNER_IMAGE,
       storeScreenshot: val.CRAWLER_STORE_SCREENSHOT,
       fullPageScreenshot: val.CRAWLER_FULL_PAGE_SCREENSHOT,
