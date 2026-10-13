@@ -1,9 +1,66 @@
 import { MessageSquare } from "lucide-react";
-import { Tweet } from "react-tweet";
+import {
+  EmbeddedTweet,
+  enrichTweet,
+  TweetContainer,
+  TweetHeader,
+  TweetNotFound,
+  TweetSkeleton,
+  useTweet,
+} from "react-tweet";
+import { z } from "zod";
 
 import { BookmarkTypes, ZBookmark } from "@karakeep/shared/types/bookmarks";
 
 import { ContentRenderer } from "./types";
+
+const articleSchema = z.object({
+  rest_id: z.string().regex(/^\d+$/),
+  title: z.string().min(1),
+  preview_text: z.string().optional(),
+  cover_media: z
+    .object({
+      media_info: z.object({ original_img_url: z.string().url() }),
+    })
+    .optional(),
+});
+
+function TweetPreview({ id }: { id: string }) {
+  const { data, error, isLoading } = useTweet(id);
+  if (isLoading) return <TweetSkeleton />;
+  if (error || !data) return <TweetNotFound error={error} />;
+
+  const article = articleSchema.safeParse(
+    "article" in data ? data.article : undefined,
+  ).data;
+  if (!article) return <EmbeddedTweet tweet={data} />;
+
+  return (
+    <TweetContainer>
+      <TweetHeader tweet={enrichTweet(data)} />
+      <a
+        href={`https://x.com/i/article/${article.rest_id}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="my-3 block overflow-hidden rounded-xl border hover:bg-muted/50"
+      >
+        {article.cover_media && (
+          <img
+            src={article.cover_media.media_info.original_img_url}
+            alt=""
+            className="aspect-[2/1] w-full object-cover"
+          />
+        )}
+        <div className="space-y-2 p-4">
+          <p className="font-semibold">{article.title}</p>
+          <p className="line-clamp-3 text-sm text-muted-foreground">
+            {article.preview_text}
+          </p>
+        </div>
+      </a>
+    </TweetContainer>
+  );
+}
 
 function extractTweetId(url: string): string | null {
   const patterns = [
@@ -42,7 +99,7 @@ function XRendererComponent({ bookmark }: { bookmark: ZBookmark }) {
   return (
     <div className="relative h-full w-full overflow-auto">
       <div className="flex justify-center p-4">
-        <Tweet id={tweetId} />
+        <TweetPreview id={tweetId} />
       </div>
     </div>
   );
