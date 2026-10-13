@@ -1334,6 +1334,8 @@ export const crawlPage = traced(
       // A UTC browser behind a proxy that geolocates elsewhere is a
       // strong bot signal; this should match the proxy's location.
       timezoneId: serverConfig.crawler.browserTimezone,
+      // prefers-color-scheme for the page; Playwright defaults to light.
+      colorScheme: serverConfig.crawler.colorScheme,
       proxy: proxyConfig,
       serviceWorkers: "block",
     });
@@ -1502,6 +1504,7 @@ async function renderPrecrawledArchiveScreenshot(
   let context: BrowserContext;
   try {
     context = await browser.newContext({
+      colorScheme: serverConfig.crawler.colorScheme,
       viewport: { width: 1440, height: 900 },
       deviceScaleFactor: DEVICE_SCALE_FACTOR,
       javaScriptEnabled: false,

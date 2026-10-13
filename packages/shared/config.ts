@@ -136,6 +136,7 @@ const allEnv = z.object({
       { message: "must be a valid IANA timezone (e.g. America/New_York)" },
     )
     .optional(),
+  CRAWLER_COLOR_SCHEME: z.enum(["light", "dark"]).optional(),
   CRAWLER_NUM_WORKERS: z.coerce.number().default(1),
   INFERENCE_NUM_WORKERS: z.coerce.number().default(1),
   SEARCH_NUM_WORKERS: z.coerce.number().default(50),
@@ -419,6 +420,7 @@ const serverConfigSchema = allEnv.transform((val, ctx) => {
       navigateTimeoutSec: val.CRAWLER_NAVIGATE_TIMEOUT_SEC,
       challengeWaitSec: val.CRAWLER_CHALLENGE_WAIT_SEC,
       browserTimezone: val.CRAWLER_BROWSER_TIMEZONE,
+      colorScheme: val.CRAWLER_COLOR_SCHEME,
       downloadBannerImage: val.CRAWLER_DOWNLOAD_BANNER_IMAGE,
       storeScreenshot: val.CRAWLER_STORE_SCREENSHOT,
       fullPageScreenshot: val.CRAWLER_FULL_PAGE_SCREENSHOT,
