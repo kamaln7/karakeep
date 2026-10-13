@@ -130,6 +130,7 @@ import {
 } from "./utils/metadataResolver";
 import { runParseSubprocess } from "./utils/parseSubprocess";
 import { installRedirectGuard } from "./utils/redirectGuard";
+import { hideXLoginPrompts } from "./utils/xLoginPrompts";
 
 const tracer = getTracer("@karakeep/workers");
 
@@ -1344,6 +1345,8 @@ export const crawlPage = traced(
       );
 
       log.info(`Finished waiting for the page to load.`);
+
+      await hideXLoginPrompts(activePage, jobId);
 
       const [htmlContent, screenshot, pdf] = await capturePageAssets(
         ctx,
