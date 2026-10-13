@@ -35,6 +35,7 @@ import {
   ReaderViewAssessment,
   unavailableReaderViewAssessment,
 } from "../workers/utils/readerViewAssessment";
+import { extractXArticle } from "../workers/utils/xArticle";
 
 // Redirect all log output to stderr so it doesn't interfere with the JSON protocol on stdout.
 logger.clear();
@@ -243,6 +244,17 @@ async function main() {
   });
 
   logger.info(`[Crawler][${jobId}] Done extracting metadata from the page.`);
+
+  if (!metadataOnly) {
+    const article = extractXArticle(htmlContent, url);
+    if (article) {
+      // Defuddle falls back to a placeholder when the title node is missing.
+      meta.title =
+        article.title !== "Untitled X Article" ? article.title : meta.title;
+      meta.author = article.author || meta.author;
+      meta.readableContentHtml = article.content;
+    }
+  }
 
   // Conditionally run readability (skip if metascraper already provided readable content, e.g. Reddit plugin)
   let readableContent: { content: string } | null = null;
