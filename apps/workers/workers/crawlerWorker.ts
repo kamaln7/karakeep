@@ -1619,6 +1619,35 @@ function captureScreenshot(ctx: CrawlContext, page: Page) {
 }
 
 /**
+ * Scrolls down a viewport at a time, then back to the top, so content that
+ * only renders when scrolled into view (IntersectionObserver reveals, lazy
+ * images) is in the HTML and the full-page screenshot. Bounded to 40
+ * viewports (~6s); failures are ignored, the capture proceeds either way.
+ */
+async function scrollThroughPage(page: Page) {
+  await page
+    .evaluate(async () => {
+      const sleep = (ms: number) => {
+        const { promise, resolve } = Promise.withResolvers<void>();
+        setTimeout(resolve, ms);
+        return promise;
+      };
+      const step = window.innerHeight || 900;
+      for (
+        let i = 0, y = 0;
+        i < 40 && y < document.documentElement.scrollHeight;
+        i++, y += step
+      ) {
+        window.scrollTo(0, y);
+        await sleep(150);
+      }
+      window.scrollTo(0, 0);
+      await sleep(400);
+    })
+    .catch(() => undefined);
+}
+
+/**
  * Extracts the page HTML and (depending on config) captures a screenshot and
  * a PDF, all in parallel.
  */
@@ -1630,6 +1659,11 @@ const capturePageAssets = traced(
     forceStorePdf: boolean,
   ): Promise<[string, Buffer | undefined, Buffer | undefined]> => {
     const { abortSignal, log } = ctx;
+    if (serverConfig.crawler.fullPageScreenshot) {
+      await scrollThroughPage(activePage);
+      abortSignal.throwIfAborted();
+    }
+
     const htmlPromise = activePage.content().then((content) => {
       abortSignal.throwIfAborted();
       log.info(`Successfully fetched the page content.`);
