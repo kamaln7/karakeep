@@ -1258,6 +1258,9 @@ export const crawlPage = traced(
       timezoneId: serverConfig.crawler.browserTimezone,
       proxy: proxyConfig,
       serviceWorkers: "block",
+      // Sets navigator.language and Accept-Language, so sites that pick a
+      // language from the browser serve this one.
+      locale: serverConfig.crawler.locale,
     });
 
     trackContext(jobId, context);
