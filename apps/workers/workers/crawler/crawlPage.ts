@@ -55,6 +55,8 @@ const tracer = getTracer("@karakeep/workers");
 export interface CrawlPageResult {
   htmlContent: string;
   screenshot: Buffer | undefined;
+  // A capture was attempted and failed (as opposed to not being attempted).
+  screenshotFailed: boolean;
   pdf: Buffer | undefined;
   statusCode: number;
   url: string;
@@ -101,6 +103,7 @@ async function browserlessCrawlPage(
         htmlContent: await response.text(),
         statusCode: response.status,
         screenshot: undefined,
+        screenshotFailed: false,
         pdf: undefined,
         url: response.url,
       };
@@ -337,7 +340,12 @@ async function capturePageAssets(
   jobId: string,
   forceStorePdf: boolean,
   abortSignal: AbortSignal,
-): Promise<[string, Buffer | undefined, Buffer | undefined]> {
+): Promise<{
+  htmlContent: string;
+  screenshot: Buffer | undefined;
+  screenshotFailed: boolean;
+  pdf: Buffer | undefined;
+}> {
   return await withSpan(
     tracer,
     "crawlerWorker.crawlPage.captureAssets",
@@ -365,6 +373,7 @@ async function capturePageAssets(
         },
       );
 
+      let screenshotFailed = false;
       const screenshotPromise: Promise<Buffer | undefined> = serverConfig
         .crawler.storeScreenshot
         ? withSpan(
@@ -402,6 +411,7 @@ async function capturePageAssets(
                 logger.warn(
                   `[Crawler][${jobId}] Failed to capture the screenshot. Reason: ${screenshotError}`,
                 );
+                screenshotFailed = true;
                 return undefined;
               }
               setSpanAttributes({
@@ -462,13 +472,13 @@ async function capturePageAssets(
             )
           : Promise.resolve(undefined);
 
-      const captureResults = await Promise.all([
+      const [htmlContent, screenshot, pdf] = await Promise.all([
         htmlPromise,
         screenshotPromise,
         pdfPromise,
       ] as const);
       abortSignal.throwIfAborted();
-      return captureResults;
+      return { htmlContent, screenshot, screenshotFailed, pdf };
     },
   );
 }
@@ -759,17 +769,19 @@ export async function crawlPage(
           `[Crawler][${jobId}] Finished waiting for the page to load.`,
         );
 
-        const [htmlContent, screenshot, pdf] = await capturePageAssets(
-          activePage,
-          jobId,
-          forceStorePdf,
-          abortSignal,
-        );
+        const { htmlContent, screenshot, screenshotFailed, pdf } =
+          await capturePageAssets(
+            activePage,
+            jobId,
+            forceStorePdf,
+            abortSignal,
+          );
 
         return {
           htmlContent,
           statusCode: response?.status() ?? 0,
           screenshot,
+          screenshotFailed,
           pdf,
           url: activePage.url(),
         };

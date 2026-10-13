@@ -125,6 +125,7 @@ export const zBookmarkedLinkSchema = z.object({
   imageUrl: z.string().nullish(),
   imageAssetId: z.string().nullish(),
   screenshotAssetId: z.string().nullish(),
+  screenshotStatus: z.enum(["success", "failure"]).nullish(),
   pdfAssetId: z.string().nullish(),
   fullPageArchiveAssetId: z.string().nullish(),
   precrawledArchiveAssetId: z.string().nullish(),

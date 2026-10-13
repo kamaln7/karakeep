@@ -312,6 +312,12 @@ export const bookmarkLinks = sqliteTable(
       enum: ["pending", "failure", "success"],
     }).default("pending"),
     crawlStatusCode: integer("crawlStatusCode").default(200),
+    // Outcome of the last attempted screenshot capture, independent of
+    // crawlStatus: a crawl can save its content while the screenshot fails.
+    // Null when the last crawl didn't attempt one.
+    screenshotStatus: text("screenshotStatus", {
+      enum: ["failure", "success"],
+    }),
     // When the pre-crawl probe last extracted and stored this link's metadata.
     // Lets crawl retries skip re-fetching it.
     probeMetadataAt: integer("probeMetadataAt", { mode: "timestamp" }),

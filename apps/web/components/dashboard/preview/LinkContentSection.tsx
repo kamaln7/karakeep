@@ -232,7 +232,9 @@ export default function LinkContentSection({
               >
                 <div className="flex items-center">
                   <Camera className="mr-2 h-4 w-4" />
-                  {t("common.screenshot")}
+                  {bookmark.content.screenshotStatus === "failure"
+                    ? t("preview.screenshot_failed")
+                    : t("common.screenshot")}
                 </div>
               </SelectItem>
               <SelectItem value="pdf" disabled={!bookmark.content.pdfAssetId}>

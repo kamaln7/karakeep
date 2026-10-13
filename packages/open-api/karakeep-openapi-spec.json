@@ -263,6 +263,15 @@
                     "type": "string",
                     "nullable": true
                   },
+                  "screenshotStatus": {
+                    "type": "string",
+                    "nullable": true,
+                    "enum": [
+                      "success",
+                      "failure",
+                      null
+                    ]
+                  },
                   "pdfAssetId": {
                     "type": "string",
                     "nullable": true

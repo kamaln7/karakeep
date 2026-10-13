@@ -217,6 +217,7 @@ export async function crawlAndParseUrl(
       let result: {
         htmlContent: string;
         screenshot: Buffer | undefined;
+        screenshotFailed: boolean;
         pdf: Buffer | undefined;
         statusCode: number | null;
         url: string;
@@ -233,6 +234,7 @@ export async function crawlAndParseUrl(
         result = {
           htmlContent: asset.asset.toString(),
           screenshot: undefined,
+          screenshotFailed: false,
           pdf: undefined,
           statusCode: 200,
           url,
@@ -252,6 +254,7 @@ export async function crawlAndParseUrl(
       const {
         htmlContent,
         screenshot,
+        screenshotFailed,
         pdf,
         statusCode,
         url: browserUrl,
@@ -415,6 +418,12 @@ export async function crawlAndParseUrl(
             readerViewReasons,
             readerViewClassifierVersion:
               readerViewAssessment?.classifierVersion ?? null,
+            // A failed capture keeps the previous screenshot asset, if any.
+            screenshotStatus: screenshotFailed
+              ? "failure"
+              : screenshotAssetInfo
+                ? "success"
+                : null,
           })
           .where(eq(bookmarkLinks.id, bookmarkId))
           .run();
