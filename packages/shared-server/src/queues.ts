@@ -83,6 +83,9 @@ export const zCrawlLinkRequestSchema = z.object({
   runInference: z.boolean().optional(),
   archiveFullPage: z.boolean().optional().default(false),
   storePdf: z.boolean().optional().default(false),
+  // Retake only the screenshot: leaves content, other assets, crawlStatus
+  // and tags alone.
+  screenshotOnly: z.boolean().optional().default(false),
 });
 export type ZCrawlLinkRequest = z.input<typeof zCrawlLinkRequestSchema>;
 
