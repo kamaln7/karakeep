@@ -1338,6 +1338,9 @@ export const crawlPage = traced(
       colorScheme: serverConfig.crawler.colorScheme,
       proxy: proxyConfig,
       serviceWorkers: "block",
+      // Sets navigator.language and Accept-Language, so sites that pick a
+      // language from the browser serve this one.
+      locale: serverConfig.crawler.locale,
     });
 
     trackContext(jobId, context);
