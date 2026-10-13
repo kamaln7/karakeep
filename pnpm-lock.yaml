@@ -19,6 +19,7 @@ overrides:
   '@types/react-dom': 19.2.3
 
 patchedDependencies:
+  defuddle@0.19.3: 7b8483eb2fc4a982eddcdf7a311d690c99461530d16259d627cb2f379d0e8320
   expo-modules-jsi@57.1.1: 0de91114675edaf8158061b65f08995617cd872a813892f81e28394ded741a77
   expo-share-intent@8.0.1: 0d82bc4e13dd196d0d74ab0507c5d042d1ca0df6403534afd76a8e18410436c6
   patchright-core@1.59.4: bad8f4246d462dedf01a4188e8d958032e1d8f1fcf243b33b1ecafe7ca41a1bd
@@ -953,7 +954,7 @@ importers:
         version: 4.0.1
       defuddle:
         specifier: 0.19.3
-        version: 0.19.3
+        version: 0.19.3(patch_hash=7b8483eb2fc4a982eddcdf7a311d690c99461530d16259d627cb2f379d0e8320)
       dompurify:
         specifier: ^3.4.16
         version: 3.4.16
@@ -26675,7 +26676,7 @@ snapshots:
 
   defu@6.1.7: {}
 
-  defuddle@0.19.3:
+  defuddle@0.19.3(patch_hash=7b8483eb2fc4a982eddcdf7a311d690c99461530d16259d627cb2f379d0e8320):
     dependencies:
       commander: 12.1.0
     optionalDependencies:
